@@ -1,0 +1,38 @@
+# Tu dong dong goi VNA_Setup.exe tren may chu Windows cua GitHub (mien phi voi kho cong khai/rieng tu trong han muc).
+# Cach dung: day thu muc VNA len GitHub -> tab Actions -> "Dong goi VNA" -> Run workflow -> tai VNA_Setup.exe o muc Artifacts.
+name: Dong goi VNA
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Cai thu vien
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller
+      - name: Dong goi VNA.exe
+        run: |
+          pyinstaller --noconfirm --clean --windowed --name VNA --icon assets\vna.ico --add-data "app\static;app\static" --add-data "app\scripts;app\scripts" --hidden-import edge_tts run.py
+          xcopy /E /I /Y office dist\VNA\office
+          xcopy /E /I /Y setup dist\VNA\setup
+          copy /Y HUONG_DAN.md dist\VNA\
+          copy /Y HUONG_DAN.docx dist\VNA\
+          copy /Y assets\vna.ico dist\VNA\
+        shell: cmd
+      - name: Tao bo cai (Inno Setup)
+        run: |
+          choco install innosetup -y --no-progress
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+          certutil -hashfile Output\VNA_Setup.exe SHA256 > Output\VNA_Setup.sha256.txt
+        shell: cmd
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VNA_Setup
+          path: Output/*
