@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VNA – AI chuyên gia của các chuyên gia</title>
+<style>
+:root{
+  --bg:#f4f5f7; --panel:#ffffff; --ink:#1b2430; --muted:#5d6b7a; --line:#dde2e8;
+  --brand:#b3161b; --brand-dark:#8c1014; --gold:#c99a2e; --accent:#0f4c81; --ok:#1f7a3d; --warn:#a35b00;
+  --user:#eef3fa; --radius:10px;
+  font-family:"Segoe UI", "Be Vietnam Pro", Roboto, Arial, sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);height:100vh;display:flex;flex-direction:column;font-size:15px}
+header{display:flex;align-items:center;gap:14px;padding:10px 18px;background:var(--brand);color:#fff;box-shadow:0 1px 0 var(--brand-dark)}
+.logo{font-weight:800;font-size:22px;letter-spacing:2px;display:flex;align-items:center;gap:8px}
+.logo .star{color:var(--gold);font-size:20px}
+.logo small{font-weight:400;font-size:13px;letter-spacing:0;opacity:.85;white-space:nowrap}
+header{gap:8px}header button{padding:6px 9px}
+@media (max-width:1400px){.logo small{display:none}}
+.status{margin-left:auto;font-size:12.5px;background:rgba(255,255,255,.14);padding:5px 10px;border-radius:20px;max-width:24vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.status.bad{background:#ffe9b3;color:#5a3a00}
+header button{white-space:nowrap;background:transparent;border:1px solid rgba(255,255,255,.45);color:#fff;padding:6px 12px;border-radius:7px;cursor:pointer;font-size:13.5px}
+header button:hover{background:rgba(255,255,255,.12)}
+.wrap{flex:1;display:flex;min-height:0}
+aside{width:290px;background:var(--panel);border-right:1px solid var(--line);padding:14px;overflow:auto;display:flex;flex-direction:column;gap:16px}
+aside h3{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.mode{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent;font-size:14px}
+.mode:hover{background:#f6f7f9}
+.mode.on{background:#fbeeee;border-color:#efc4c5;color:var(--brand-dark);font-weight:600}
+.mode .ic{width:22px;text-align:center}
+.chips{display:flex;flex-direction:column;gap:6px}
+.chip{font-size:13px;text-align:left;background:#f6f7f9;border:1px solid var(--line);padding:7px 9px;border-radius:8px;cursor:pointer;color:var(--ink)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.btn{background:var(--accent);color:#fff;border:0;padding:8px 13px;border-radius:8px;cursor:pointer;font-size:14px}
+.btn:hover{filter:brightness(1.08)}
+.btn.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.red{background:var(--brand)}
+.btn:disabled{opacity:.5;cursor:default}
+.att{font-size:13px;display:flex;justify-content:space-between;gap:6px;padding:5px 8px;background:#f6f7f9;border-radius:6px;margin-top:5px}
+.att span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.att b{cursor:pointer;color:var(--brand)}
+label.chk{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+main{flex:1;display:flex;flex-direction:column;min-width:0}
+#chat{flex:1;overflow:auto;padding:22px 7%}
+.msg{margin:0 0 18px;display:flex;flex-direction:column}
+.msg .who{font-size:12px;color:var(--muted);margin-bottom:4px}
+.msg .bubble{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;line-height:1.6;overflow-x:auto}
+.msg.user .bubble{background:var(--user);border-color:#d5e1f0;white-space:pre-wrap}
+.bubble table{border-collapse:collapse;margin:8px 0;font-size:14px}
+.bubble th,.bubble td{border:1px solid #c9d1da;padding:5px 9px;vertical-align:top}
+.bubble th{background:#eef2f6}
+.bubble h1,.bubble h2,.bubble h3,.bubble h4{margin:12px 0 6px;font-size:16px}
+.bubble p{margin:6px 0}
+.bubble ul{margin:6px 0;padding-left:22px}
+.bubble code{background:#f1f3f5;padding:1px 4px;border-radius:4px}
+.bubble pre{background:#1e2430;color:#e6edf3;padding:12px 14px;border-radius:8px;overflow:auto;font-size:13px;line-height:1.45}
+.bubble pre code{background:transparent;padding:0;color:inherit;font-family:Consolas,"Cascadia Code",monospace}
+.actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.actions button{font-size:12.5px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:4px 9px;cursor:pointer;color:var(--ink)}
+.actions button:hover{border-color:var(--accent);color:var(--accent)}
+.src{font-size:12.5px;color:var(--muted);margin-top:6px}
+.welcome{max-width:760px;margin:6vh auto;text-align:center;color:var(--muted)}
+.welcome h1{color:var(--brand);font-size:34px;letter-spacing:4px;margin:0}
+.welcome .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px;text-align:left}
+.welcome .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13.5px}
+.welcome .card b{display:block;color:var(--ink);margin-bottom:4px}
+.composer{border-top:1px solid var(--line);background:var(--panel);padding:12px 7%;display:flex;gap:10px;align-items:flex-end}
+textarea#q{flex:1;resize:none;min-height:52px;max-height:220px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font:inherit;outline:none}
+textarea#q:focus{border-color:var(--accent)}
+.thinking{display:inline-block;color:var(--muted);font-style:italic}
+.thinking:after{content:"";animation:dots 1.4s infinite}
+@keyframes dots{0%{content:""}33%{content:"."}66%{content:".."}100%{content:"..."}}
+dialog{border:0;border-radius:12px;padding:0;width:min(680px,94vw);box-shadow:0 10px 40px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(20,25,35,.45)}
+.dh{padding:14px 18px;border-bottom:1px solid var(--line);font-weight:700;display:flex;justify-content:space-between}
+.dh b{cursor:pointer;color:var(--muted);font-weight:400}
+.db{padding:16px 18px;max-height:68vh;overflow:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.db .full{grid-column:1/-1}
+.db label{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.db input,.db select,.db textarea{font:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;color:var(--ink)}
+.db label.chk{flex-direction:row;align-items:center;color:var(--ink);font-size:14px}
+.db h4{grid-column:1/-1;margin:8px 0 0;font-size:13px;color:var(--brand-dark);border-bottom:1px solid var(--line);padding-bottom:4px}
+.df{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end}
+.note{font-size:12.5px;color:var(--muted);grid-column:1/-1;line-height:1.5}
+.libfile{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 0;border-bottom:1px dashed var(--line);grid-column:1/-1}
+.greet{max-width:860px;margin:3vh auto 0;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.greet .top{background:linear-gradient(120deg,#b3161b,#d0452e);color:#fff;padding:18px 22px}
+.greet .top h2{margin:0 0 4px;font-size:21px}
+.greet .top p{margin:2px 0;opacity:.95}
+.greet .body{padding:14px 22px 18px}
+.greet .sum{color:var(--muted);margin:2px 0 10px;font-size:14px}
+table.check{width:100%;border-collapse:collapse;font-size:14px}
+table.check th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;border-bottom:2px solid var(--line);padding:6px 8px}
+table.check td{border-bottom:1px solid var(--line);padding:7px 8px;vertical-align:middle}
+table.check tr.done td{color:#8a96a3;text-decoration:line-through}
+table.check tr.done td:first-child{text-decoration:none}
+table.check input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--ok)}
+.pri{font-size:11.5px;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.pri.cao{background:#fde2e2;color:#a01616}.pri.tb{background:#fff1d6;color:#8a5a00}.pri.thap{background:#e6f2ea;color:#1f6b38}
+.tag{font-size:11.5px;color:var(--muted)}.tag.od{color:#b3161b;font-weight:700}
+.progress{height:8px;background:#eef1f4;border-radius:5px;overflow:hidden;margin:10px 0 4px}.progress i{display:block;height:100%;background:var(--ok);transition:.3s}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.tabs button{border:0;background:none;padding:8px 12px;cursor:pointer;font-size:14px;color:var(--muted);border-bottom:2px solid transparent}
+.tabs button.on{color:var(--brand-dark);border-color:var(--brand);font-weight:600}
+.blk{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.blk h4{margin:0 0 6px;font-size:14.5px}
+.badge{display:inline-block;background:var(--brand);color:#fff;border-radius:10px;font-size:11.5px;padding:1px 7px;margin-left:4px}
+#tip{position:fixed;z-index:200;max-width:440px;background:#1b2430;color:#fff;border-radius:10px;padding:10px 13px;font-size:13.5px;line-height:1.5;white-space:pre-line;box-shadow:0 8px 28px rgba(0,0,0,.28);pointer-events:none;opacity:0;transition:opacity .12s}
+#tip.show{opacity:.97}
+[data-tip]{cursor:help}
+.cv{display:flex;gap:8px;align-items:baseline;padding:5px 6px;border-radius:6px;font-size:14px}
+.cv:hover{background:#f3f6fa}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1b2430;color:#fff;padding:9px 16px;border-radius:8px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:99;max-width:80vw}
+.toast.show{opacity:.95}
+@media (max-width:900px){aside{display:none}#chat,.composer{padding-left:14px;padding-right:14px}.welcome .cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span class="star">★</span>VNA <small>AI chuyên gia của các chuyên gia</small></div>
+  <div class="status" id="status" title="Bấm để kiểm tra lại">Đang kiểm tra…</div>
+  <button onclick="post('/api/open_folder',{which:'workspace'})" title="Mở 5 thư mục VNA quản lý">📂 Thư mục VNA</button>
+  <button onclick="openFolders()" title="Rà soát, sắp xếp thư mục hồ sơ khác">🗂 Rà soát thư mục</button>
+  <button onclick="openLibrary()">📚 Thư viện</button>
+  <button onclick="openLearning()" title="Sổ tay phong cách, Sổ lỗi, tiến bộ">🧠 Học tập</button>
+  <button onclick="openSettings()">⚙ Cài đặt</button>
+  <button onclick="quitApp()" title="Tắt VNA">⏻</button>
+</header>
+
+<div id="setupbar" style="display:none;background:#fff7e0;border-bottom:1px solid #f0d58a;padding:8px 18px;font-size:14px">
+  <div class="row" style="justify-content:space-between"><span>⚙ <b>VNA đang tự hoàn tất cài đặt:</b> <span id="setupmsg"></span></span>
+  <button class="btn sec" style="padding:3px 10px;font-size:12.5px" onclick="post('/api/setup/retry',{});toast('Đang thử lại…')">Thử lại</button></div>
+  <div class="progress" style="margin:6px 0 0"><i id="setuppct" style="width:0%"></i></div>
+</div>
+<div class="wrap">
+  <aside>
+    <div>
+      <h3>Khu vực làm việc</h3>
+      <div id="nav">
+        <div class="mode navi" data-a="homnay" onclick="goTo('homnay')"><span class="ic">☀</span>Hôm nay</div>
+        <div class="mode navi" data-a="vanban" onclick="goTo('vanban')"><span class="ic">📄</span>Văn bản</div>
+        <div class="mode navi" data-a="congviec" onclick="goTo('congviec')"><span class="ic">✅</span>Công việc</div>
+        <div class="mode navi" data-a="hoi" onclick="goTo('hoi')"><span class="ic">🤖</span>Hỏi chuyên gia</div>
+        <div class="mode navi" data-a="chuyenmon" onclick="goTo('chuyenmon')"><span class="ic">🧑‍🏫</span>Chuyên môn</div>
+        <div class="mode navi" data-a="canhan" onclick="goTo('canhan')"><span class="ic">🏠</span>Cá nhân</div>
+      </div>
+    </div>
+    <div>
+      <h3>Chuyên gia trả lời</h3>
+      <div id="modes"></div>
+    </div>
+    <div>
+      <h3>Tài liệu đính kèm</h3>
+      <button class="btn sec" style="width:100%" onclick="pick.click()">＋ Thêm tài liệu (Word, Excel, PDF, ảnh)</button>
+      <input type="file" id="pick" multiple accept=".docx,.xlsx,.xlsm,.pdf,.txt,.md,.csv,.jpg,.jpeg,.png,.bmp,.tif,.tiff,.webp,.heic" hidden>
+      <div id="atts"></div>
+    </div>
+    <div id="gvbox" style="display:none">
+      <h3>Công cụ giáo viên</h3>
+      <button class="btn" style="width:100%;margin-bottom:6px" onclick="dlgCham.showModal()">✅ Chấm bài hàng loạt</button>
+      <button class="btn sec" style="width:100%" onclick="dlgNX.showModal()">💬 Nhận xét học sinh (Thông tư 22)</button>
+    </div>
+    <div id="tkbox" style="display:none">
+      <h3>Triển khai trong nhà trường</h3>
+      <button class="btn" style="width:100%" onclick="trienKhai()">🏫 Tạo bộ tài liệu triển khai</button>
+      <div class="note" style="font-size:12px;color:var(--muted);margin-top:5px">Đính kèm văn bản cấp trên → VNA tạo 4 file Word: nghiên cứu văn bản, kế hoạch, thông báo, tài liệu phổ biến.</div>
+    </div>
+    <label class="chk"><input type="checkbox" id="uselib" checked> Tra cứu thư viện tài liệu</label>
+    <div>
+      <h3>Gợi ý nhanh</h3>
+      <div class="chips" id="chips"></div>
+    </div>
+    <button class="btn sec" onclick="newChat()">🗘 Cuộc trao đổi mới</button>
+    <div class="tag" style="margin-top:auto;padding-top:10px;border-top:1px solid var(--line);line-height:1.5">Thiết kế mô hình vận dụng thuộc về <b>pvn23dqlcvn</b></div>
+  </aside>
+
+  <main>
+    <div id="chat"></div>
+    <div class="composer">
+      <textarea id="q" placeholder="Nhập yêu cầu… (Ctrl+Enter để gửi). Có thể kéo thả tài liệu vào đây."></textarea>
+      <label class="chk" title="Tra cứu thông tin hiện hành trên các trang chính thống của Nhà nước (.gov.vn, chinhphu.vn, vbpl.vn…). Khi không tích, VNA vẫn tự tra cứu nếu câu hỏi có từ 'mới nhất', 'hiện hành', 'còn hiệu lực'…" style="font-size:12.5px;white-space:nowrap"><input type="checkbox" id="useweb"> 🌐 Nguồn chính thống</label>
+      <button class="btn sec" id="mic" title="Nói bằng giọng (cần Internet, trình duyệt Edge/Chrome)" onclick="dictate()">🎤</button>
+      <button class="btn red" id="send" onclick="send()">Gửi</button>
+    </div>
+  </main>
+</div>
+
+<!-- Xuat Word -->
+<dialog id="dlgWord">
+  <div class="dh">Xuất văn bản Word <b onclick="dlgWord.close()">✕</b></div>
+  <div class="db">
+    <label class="chk full" style="flex-direction:row;color:var(--ink)"><input type="checkbox" id="w_thethuc" checked> Trình bày theo thể thức Nghị định 30/2020/NĐ-CP (Quốc hiệu, tiêu ngữ, số ký hiệu, nơi nhận, chữ ký)</label>
+    <h4>Thể thức</h4>
+    <label>Loại văn bản<select id="w_loai">
+      <option>Công văn</option><option>Quyết định</option><option>Tờ trình</option><option>Báo cáo</option>
+      <option>Kế hoạch</option><option>Thông báo</option><option>Biên bản</option><option>Giấy mời</option><option>Văn bản khác</option></select></label>
+    <label>Số, ký hiệu<input id="w_so" placeholder="Số:      /UBND-VP"></label>
+    <label class="full">Trích yếu nội dung<input id="w_trichyeu"></label>
+    <label class="full">Kính gửi (công văn, tờ trình; nhiều nơi cách nhau dấu ;)<input id="w_kinhgui"></label>
+    <label>Cơ quan chủ quản<input id="w_cqcq"></label>
+    <label>Cơ quan ban hành<input id="w_cq"></label>
+    <label>Địa danh<input id="w_diadanh"></label>
+    <label>Cỡ chữ nội dung<select id="w_cochu"><option>14</option><option>13</option></select></label>
+    <label>Chức vụ người ký (dùng / để xuống dòng: KT. GIÁM ĐỐC / PHÓ GIÁM ĐỐC)<input id="w_chucvu"></label>
+    <label>Họ tên người ký<input id="w_nguoiky"></label>
+    <label class="full">Nơi nhận (mỗi dòng một nơi)<textarea id="w_noinhan" rows="4"></textarea></label>
+    <div class="note">Văn bản được lưu vào thư mục <b>Documents\VNA\van_ban_xuat</b>. Hãy kiểm tra, chỉnh sửa trước khi trình ký.</div>
+  </div>
+  <div class="df">
+    <button class="btn sec" onclick="doWord(false)">⬇ Tải về</button>
+    <button class="btn" onclick="doWord(true)">Mở bằng Word</button>
+  </div>
+</dialog>
+
+<!-- Cai dat -->
+<dialog id="dlgSet">
+  <div class="dh">Cài đặt VNA <b onclick="dlgSet.close()">✕</b></div>
+  <div class="db">
+    <h4>Miễn phí & riêng tư</h4>
+    <label class="chk full"><input type="checkbox" id="s_offline_only"> <b>Hoàn toàn ngoại tuyến</b> — chặn mọi kết nối Internet; VNA chỉ làm việc trên máy này (khuyến nghị)</label>
+    <div class="note">VNA miễn phí: không tài khoản, không quảng cáo, không thu thập hay gửi dữ liệu đi đâu. Mô hình AI trên máy (Ollama) miễn phí. Claude API là dịch vụ <b>trả phí</b> của bên thứ ba, chỉ dùng khi bạn tự chọn và tắt chế độ ngoại tuyến.</div>
+    <label class="chk full"><input type="checkbox" id="s_official_web"> Cho phép tra cứu <b>nguồn chính thống</b> của Nhà nước khi cần thông tin hiện hành (chỉ gửi từ khóa; chỉ mở trang .gov.vn, chinhphu.vn, vbpl.vn, quochoi.vn…)</label>
+    <label class="chk full"><input type="checkbox" id="s_web_auto"> Tự tra cứu khi câu hỏi có “mới nhất”, “hiện hành”, “còn hiệu lực”…</label>
+    <label class="full">Thêm tên miền chính thống khác (cách nhau dấu phẩy)<input id="s_official_extra_domains" placeholder="VD: moet.edu.vn"></label>
+    <h4>Năng lượng & tốc độ</h4>
+    <label>Chế độ<select id="s_power_mode"><option value="tu_dong">Tự động (dùng pin → tiết kiệm; cắm sạc → hiệu năng)</option><option value="tiet_kiem">Luôn tiết kiệm pin</option><option value="hieu_nang">Luôn hiệu năng cao</option></select></label>
+    <label>Mô hình nhỏ (việc trích xuất, dùng khi chạy pin)<input id="s_ollama_model_fast"></label>
+    <label class="chk"><input type="checkbox" id="s_phan_bien_khi_dung_pin"> Vẫn chạy AI phản biện khi dùng pin</label>
+    <label class="chk"><input type="checkbox" id="s_ai_cache"> Nhớ kết quả AI cho việc lặp lại</label>
+    <div class="note">Khi dùng pin, VNA tự: dùng mô hình nhỏ, giảm số nhân CPU, tắt lớp phản biện, hoãn việc học và sáng kiến đến khi cắm sạc và máy rảnh, quét thư mục thưa hơn, đọc chữ ảnh khi cắm sạc.</div>
+    <h4>Bộ não AI</h4>
+    <label class="full">Chạy AI bằng<select id="s_backend">
+      <option value="ollama">Mô hình trên laptop – Ollama (miễn phí, không cần Internet, bảo mật)</option>
+      <option value="claude">Claude API – Anthropic (trả phí, cần Internet)</option>
+      <option value="openai">Máy chủ tương thích OpenAI (LM Studio, máy chủ nội bộ…)</option></select></label>
+    <label>Mô hình Ollama<input id="s_ollama_model" list="ollist"><datalist id="ollist"></datalist></label>
+    <label>Địa chỉ Ollama<input id="s_ollama_url"></label>
+    <label>Claude API key<input id="s_claude_api_key" type="password" placeholder="sk-ant-..."></label>
+    <label>Mô hình Claude<input id="s_claude_model"></label>
+    <label>Địa chỉ máy chủ OpenAI-compatible<input id="s_openai_base_url"></label>
+    <label>Tên mô hình (máy chủ đó)<input id="s_openai_model"></label>
+    <label>API key (máy chủ đó, nếu có)<input id="s_openai_api_key" type="password"></label>
+    <label>Độ sáng tạo (0–1)<input id="s_temperature" type="number" step="0.1" min="0" max="1"></label>
+    <div class="note">⚠ Tài liệu mật, tài liệu chứa bí mật nhà nước: chỉ dùng chế độ <b>mô hình trên laptop (Ollama)</b>, không gửi lên dịch vụ đám mây.</div>
+    <h4>Giọng đọc</h4>
+    <label>Bộ giọng<select id="s_tts_engine">
+      <option value="windows">Giọng Windows – offline</option>
+      <option value="edge">Giọng tự nhiên Edge – cần Internet</option></select></label>
+    <label>Tốc độ đọc<input id="s_tts_rate" type="number" step="0.1" min="0.5" max="2"></label>
+    <label>Giọng Edge<select id="s_edge_voice"><option value="vi-VN-HoaiMyNeural">Hoài My (nữ)</option><option value="vi-VN-NamMinhNeural">Nam Minh (nam)</option></select></label>
+    <div class="note" id="voiceinfo"></div>
+    <h4>Người dùng & lời chào</h4>
+    <label>Tên trong lời chào (để trống = tên chủ máy)<input id="s_ten_nguoi_dung" placeholder="Nguyễn Văn A"></label>
+    <label>Cách xưng hô (không bắt buộc)<input id="s_danh_xung" placeholder="thầy / cô / anh / chị"></label>
+    <div class="note" id="ownerinfo"></div>
+    <label class="chk"><input type="checkbox" id="s_greet_speak"> Đọc lời chào khi mở chương trình</label>
+    <label class="chk"><input type="checkbox" id="s_remind_speak"> Đọc to lời nhắc việc</label>
+    <h4>Tự kiểm tra & đặt tên</h4>
+    <label class="chk"><input type="checkbox" id="s_tu_kiem_tra"> Lớp 1: kiểm tra tự động (thể thức, căn cứ, hạn, số liệu, Sổ lỗi)</label>
+    <label class="chk"><input type="checkbox" id="s_phan_bien_ai"> Lớp 2: AI phản biện đọc lại (chậm hơn, kỹ hơn)</label>
+    <label class="chk"><input type="checkbox" id="s_dat_ten_chuan"> Đặt tên file chuẩn: Ngày_SốKýHiệu_TríchYếu</label>
+    <h4>Sao lưu (tự động hằng tuần, giữ 8 bản)</h4>
+    <label class="full">Thư mục sao lưu (để trống = Documents\VNA\_sao_luu; nên chọn USB/ổ khác)<input id="s_backup_dir"></label>
+    <div class="full row"><button class="btn sec" onclick="backupNow()">💾 Sao lưu ngay</button><button class="btn sec" onclick="post('/api/open_folder',{which:'backup'})">Mở thư mục sao lưu</button><select id="bk_list" style="flex:1"></select><button class="btn sec" onclick="restoreBk()">↶ Phục hồi bản đã chọn</button></div>
+    <h4>Văn bản đến tự động</h4>
+    <label class="full">Thư mục VNA quản lý (để trống = Documents\VNA\Thư mục VNA quản lý)<input id="s_workspace_dir"></label>
+    <label class="chk"><input type="checkbox" id="s_inbox_auto"> Tự động xử lý văn bản mới</label>
+    <label class="chk"><input type="checkbox" id="s_inbox_trien_khai"> Tự tạo ngay bộ tài liệu triển khai (tắt = chỉ đề xuất, bạn bấm mới tạo)</label>
+    <h4>Nhà trường</h4>
+    <label>Tên trường<input id="s_ten_truong" placeholder="TRƯỜNG THCS VÀ THPT ..."></label>
+    <label>Năm học<input id="s_nam_hoc" placeholder="2026-2027"></label>
+    <h4>Thể thức mặc định của cơ quan</h4>
+    <label>Cơ quan chủ quản<input id="s_co_quan_chu_quan"></label>
+    <label>Tên cơ quan ban hành<input id="s_co_quan"></label>
+    <label>Ký hiệu cơ quan (VD: UBND-VP)<input id="s_ky_hieu_co_quan"></label>
+    <label>Địa danh<input id="s_dia_danh"></label>
+    <label>Chức vụ người ký<input id="s_chuc_vu_ky"></label>
+    <label>Họ tên người ký<input id="s_nguoi_ky"></label>
+    <h4>Thư viện</h4>
+    <label class="full">Thư mục thư viện tài liệu (để trống = Documents\VNA\thu_vien)<input id="s_library_dir"></label>
+  </div>
+  <div class="df"><button class="btn sec" onclick="dlgSet.close()">Đóng</button><button class="btn" onclick="saveSettings()">Lưu cài đặt</button></div>
+</dialog>
+
+<!-- Thu vien -->
+<dialog id="dlgLib">
+  <div class="dh">Thư viện tài liệu <b onclick="dlgLib.close()">✕</b></div>
+  <div class="db" id="libbody"></div>
+  <div class="df">
+    <input type="file" id="libpick" multiple accept=".docx,.xlsx,.pdf,.txt,.md,.csv,.jpg,.jpeg,.png,.bmp,.tif,.tiff,.webp,.heic" hidden>
+    <button class="btn sec" onclick="post('/api/open_folder',{which:'library'})">Mở thư mục</button>
+    <button class="btn sec" onclick="post('/api/library/refresh',{}).then(()=>setTimeout(openLibrary,1500))">Cập nhật chỉ mục</button>
+    <button class="btn" onclick="libpick.click()">＋ Thêm tài liệu vào thư viện</button>
+  </div>
+</dialog>
+
+<!-- Cong viec -->
+<dialog id="dlgTasks" style="width:min(980px,96vw)">
+  <div class="dh">✅ Công việc – Kế hoạch – Nhật ký <b onclick="dlgTasks.close()">✕</b></div>
+  <div class="db" style="display:block">
+    <div class="row">
+      <select id="t_loai" onchange="$('#t_nguoi').style.display=this.value==='giao'?'':'none'"><option value="toi">Việc tôi làm</option><option value="giao">Giao cho người khác</option></select>
+      <input id="t_title" placeholder="Tên công việc…" style="flex:2;min-width:200px">
+      <input id="t_nguoi" placeholder="Người / bộ phận thực hiện" style="display:none;flex:1">
+      <input id="t_due" type="datetime-local" title="Hạn hoàn thành">
+      <select id="t_pri"><option value="cao">Ưu tiên cao</option><option value="trung bình" selected>Trung bình</option><option value="thấp">Thấp</option></select>
+      <select id="t_rem" title="Nhắc trước"><option value="0">Nhắc đúng giờ</option><option value="15" selected>Nhắc trước 15 phút</option><option value="60">Trước 1 giờ</option><option value="1440">Trước 1 ngày</option><option value="-1">Không nhắc</option></select>
+      <select id="t_rep"><option>không</option><option>hằng ngày</option><option>hằng tuần</option></select>
+      <button class="btn" onclick="addTask()">＋ Thêm</button>
+    </div>
+    <input id="t_note" placeholder="Ghi chú (không bắt buộc)" style="width:100%;margin-top:8px">
+    <div class="tabs" style="margin-top:12px" id="ttabs">
+      <button data-t="toi" onclick="taskTab='toi';loadTasks()">📌 Việc tôi phải làm</button>
+      <button data-t="giao" onclick="taskTab='giao';loadTasks()">🧭 Việc đã giao – đôn đốc</button>
+      <button data-t="de_xuat" onclick="taskTab='de_xuat';loadTasks()">📝 Đề xuất chờ duyệt <span id="tcount"></span></button>
+      <button data-t="nhatky" onclick="taskTab='nhatky';loadTasks()">📔 Nhật ký</button>
+    </div>
+    <div id="tasklist"></div>
+    <div id="jbox" style="display:none">
+      <div class="row"><textarea id="j_text" rows="2" style="flex:1" placeholder="Ghi lại việc đã làm, kết quả, ý tưởng…"></textarea><button class="btn sec" onclick="addJournal()">Ghi nhật ký</button></div>
+      <div id="journal" style="font-size:13.5px;margin-top:8px"></div>
+    </div>
+  </div>
+  <div class="df">
+    <button class="btn sec" onclick="post('/api/open_folder',{which:'tracking'})">📈 Mở sổ theo dõi</button>
+    <button class="btn sec" onclick="plannerAI('tuan')">🗓 AI lập kế hoạch tuần</button>
+    <button class="btn sec" onclick="plannerAI('tong_ket')">📋 AI tổng kết ngày</button>
+    <button class="btn" onclick="plannerAI('ke_hoach')">✨ AI lập kế hoạch hôm nay</button>
+  </div>
+</dialog>
+
+<!-- Cham bai -->
+<dialog id="dlgCham">
+  <div class="dh">✅ Chấm bài hàng loạt <b onclick="dlgCham.close()">✕</b></div>
+  <div class="db">
+    <label>Môn, lớp, bài kiểm tra<input id="c_mon" placeholder="VD: Toán 9 – Kiểm tra giữa kỳ I"></label>
+    <label>Thang điểm<input id="c_thang" type="number" value="10"></label>
+    <label class="full">Đáp án – hướng dẫn chấm (bắt buộc)<input type="file" id="c_da" accept=".docx,.pdf,.txt,.xlsx"></label>
+    <label class="full">Đề bài (không bắt buộc)<input type="file" id="c_de" accept=".docx,.pdf,.txt"></label>
+    <label class="full">Bài làm của học sinh (chọn nhiều file, mỗi file một bài)<input type="file" id="c_bai" multiple accept=".docx,.pdf,.txt,.jpg,.jpeg,.png,.tif,.tiff,.heic"></label>
+    <label class="full">Yêu cầu thêm (không bắt buộc)<input id="c_yc" placeholder="VD: trừ 0,25 điểm nếu thiếu đơn vị"></label>
+    <div class="note">Nhận Word, PDF, txt và ảnh chụp bài làm (VNA đọc chữ bằng OCR của Windows; chữ viết tay khó đọc sẽ được đánh dấu để giáo viên chấm tay). Kết quả: <b>Bảng điểm Excel</b> và <b>file Word chi tiết từng câu</b>, lưu trong “2. Văn bản - sản phẩm đã làm”. Giáo viên luôn kiểm tra lại trước khi công bố điểm.</div>
+  </div>
+  <div class="df"><button class="btn" onclick="chamBai()">Bắt đầu chấm</button></div>
+</dialog>
+<dialog id="dlgNX">
+  <div class="dh">💬 Nhận xét học sinh theo Thông tư 22/2021/TT-BGDĐT <b onclick="dlgNX.close()">✕</b></div>
+  <div class="db">
+    <label class="full">Bảng điểm / danh sách học sinh (Excel, có cột “Họ và tên” và các cột điểm, mức đánh giá)<input type="file" id="n_file" accept=".xlsx"></label>
+    <label>Môn học / lớp<input id="n_mon" placeholder="VD: Ngữ văn 8A"></label>
+    <label>Loại nhận xét<select id="n_loai"><option value="mon_hoc">Nhận xét môn học</option><option value="ren_luyen">Kết quả rèn luyện</option><option value="gvcn">Giáo viên chủ nhiệm (cả năm)</option></select></label>
+    <label class="full">Lưu ý thêm (không bắt buộc)<input id="n_them" placeholder="VD: nhận xét học kỳ I, nhấn mạnh tinh thần tự học"></label>
+    <div class="note">VNA thêm cột “Nhận xét (VNA)” vào bản sao của bảng điểm (không sửa file gốc) và mở bằng Excel. Hãy đọc lại, chỉnh sửa cho sát từng em trước khi nhập vào sổ/phần mềm quản lý.</div>
+  </div>
+  <div class="df"><button class="btn" onclick="nhanXet()">Tạo nhận xét</button></div>
+</dialog>
+
+<!-- Dinh duong -->
+<dialog id="dlgFood" style="width:min(1000px,96vw)">
+  <div class="dh">🍲 Dinh dưỡng gia đình – thực đơn & theo dõi bữa ăn <b onclick="dlgFood.close()">✕</b></div>
+  <div class="db" style="display:block">
+    <h4 style="margin-top:0">Gia đình tôi</h4>
+    <div class="row">
+      <label style="flex:0 0 90px">Số người<input id="p_so_nguoi" type="number" min="1"></label>
+      <label style="flex:2">Thành viên<input id="p_thanh_vien"></label>
+      <label style="flex:1">Vùng miền<select id="p_vung_mien"><option>Miền Bắc</option><option>Miền Trung</option><option>Miền Nam</option><option>Tây Nguyên</option></select></label>
+      <label style="flex:1">Ngân sách<select id="p_ngan_sach"><option>tiết kiệm</option><option>trung bình</option><option>khá</option></select></label>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <label style="flex:1">Lưu ý sức khỏe (nếu có)<input id="p_suc_khoe" placeholder="VD: bố huyết áp cao, mẹ đường huyết hơi cao"></label>
+      <label style="flex:1">Sở thích / kiêng<input id="p_so_thich" placeholder="VD: không ăn cay, thích cá"></label>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn" onclick="foodAI('tuan')">📅 Đề xuất thực đơn 1 tuần</button>
+      <button class="btn sec" onclick="foodAI('thang')">🗓 Thực đơn 1 tháng</button>
+    </div>
+    <h4>Hôm nay tôi đã dùng <input type="date" id="f_day" style="margin-left:8px;font-size:13px" onchange="loadFood()"></h4>
+    <div id="foodgrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px"></div>
+    <h4>Phân tích 7 ngày gần nhất</h4>
+    <div id="foodan" class="bubble" style="font-size:14px"></div>
+  </div>
+  <div class="df">
+    <span class="tag" style="margin-right:auto">Thông tin mang tính tham khảo cho người khỏe mạnh; người có bệnh lý nên hỏi ý kiến bác sĩ.</span>
+    <button class="btn" onclick="foodAI('khuyen_nghi')">✨ Khuyến nghị thực phẩm cần bổ sung</button>
+  </div>
+</dialog>
+
+<!-- Van ban den -->
+<dialog id="dlgInbox" style="width:min(1060px,96vw)">
+  <div class="dh">📄 Văn bản – đến, đi, sản phẩm <b onclick="dlgInbox.close()">✕</b></div>
+  <div class="db" style="display:block">
+    <div class="note" style="margin-bottom:8px">Chép công văn vào <b>01_VAN_BAN_DEN</b> → VNA ghi sổ, đề xuất nhiệm vụ, lập phiếu xử lý. Bản chính thức đã ký đặt vào <b>04_SAN_PHAM/Da_ban_hanh</b> → VNA ghi sổ đi, đóng nhiệm vụ đã trả lời, đề xuất việc cần đôn đốc và học phong cách của bạn.</div>
+    <div class="row" style="margin-bottom:8px">
+      <button class="btn sec" onclick="post('/api/open_folder',{which:'den'})">📥 01 Văn bản đến</button>
+      <button class="btn sec" onclick="post('/api/open_folder',{which:'nguon'})">⚖️ 02 Nguồn căn cứ</button>
+      <button class="btn sec" onclick="post('/api/open_folder',{which:'tham_khao'})">📚 03 Tham khảo</button>
+      <button class="btn sec" onclick="post('/api/open_folder',{which:'du_thao'})">✏️ 04 Dự thảo</button>
+      <button class="btn sec" onclick="post('/api/open_folder',{which:'ban_hanh'})">✅ 04 Đã ban hành</button>
+      <button class="btn sec" onclick="post('/api/open_folder',{which:'tracking'})">📈 05 Theo dõi</button>
+      <span class="tag" id="ib_status" style="margin-left:auto"></span>
+    </div>
+    <div class="tabs" id="vbtabs"><button data-t="den" onclick="vbTab='den';openInbox()">📥 Văn bản đến</button><button data-t="di" onclick="vbTab='di';openInbox()">📤 Văn bản đi / đã ban hành</button></div>
+    <div id="ib_list"></div>
+  </div>
+  <div class="df">
+    <button class="btn sec" onclick="post('/api/inbox/scan_now',{});toast('Đang kiểm tra thư mục…');setTimeout(openInbox,3000)">🔄 Kiểm tra ngay</button>
+    <button class="btn" onclick="post('/api/inbox/register_xlsx',{}).then(()=>toast('Đang mở sổ văn bản bằng Excel'))">📊 Mở sổ văn bản (Excel)</button>
+  </div>
+</dialog>
+
+<!-- Hoc tap -->
+<dialog id="dlgLearn" style="width:min(1000px,96vw)">
+  <div class="dh">🧠 Học tập – Sổ tay phong cách, Sổ lỗi, tiến bộ <b onclick="dlgLearn.close()">✕</b></div>
+  <div class="db" style="display:block">
+    <div class="note" style="margin-bottom:8px">VNA học từ các bản bạn đã sửa và đặt vào <b>04_SAN_PHAM/Da_ban_hanh</b>, và từ nút 👍/👎. Quy tắc mới ở trạng thái <b>chờ</b> đến khi gặp lại lần 2 hoặc bạn duyệt. Bạn sửa, tắt, xóa từng dòng được.</div>
+    <div class="tabs" id="ltabs"><button data-t="rule" onclick="lTab='rule';openLearning()">📘 Sổ tay phong cách</button><button data-t="error" onclick="lTab='error';openLearning()">🚫 Sổ lỗi</button><button data-t="stat" onclick="lTab='stat';openLearning()">📈 Tiến bộ & định dạng</button><button data-t="sk" onclick="lTab='sk';openLearning()">💡 Sáng kiến</button></div>
+    <div id="lbody"></div>
+  </div>
+  <div class="df" id="lfoot"></div>
+</dialog>
+
+<!-- Quan ly thu muc -->
+<dialog id="dlgFolders" style="width:min(820px,96vw)">
+  <div class="dh">Quản lý thư mục <b onclick="dlgFolders.close()">✕</b></div>
+  <div class="db" style="display:block">
+    <div class="note" style="margin-bottom:10px">🔒 VNA <b>chỉ</b> làm việc trong các thư mục bạn thêm dưới đây, <b>không bao giờ xóa tài liệu</b>: bản trùng được chuyển vào thư mục <b>_TRUNG_LAP</b> để bạn tự quyết định. Mọi thay đổi đều được xem trước, ghi nhật ký và có thể <b>hoàn tác</b>. Việc rà soát chạy hoàn toàn trên máy, không gửi tài liệu ra ngoài.</div>
+    <div class="row"><button class="btn" onclick="addFolder(true)">＋ Chọn thư mục…</button>
+      <input id="f_path" placeholder="hoặc dán đường dẫn, VD: D:\HoSo\VanBan2026" style="flex:1"><button class="btn sec" onclick="addFolder(false)">Thêm</button></div>
+    <div id="folderlist" style="margin-top:10px"></div>
+    <div class="row" style="margin-top:10px">
+      <label class="chk"><input type="checkbox" id="o_cat" checked> Xếp theo loại văn bản</label>
+      <label class="chk"><input type="checkbox" id="o_year" checked> Theo năm</label>
+      <label class="chk"><input type="checkbox" id="o_dup" checked> Gom tài liệu trùng</label>
+    </div>
+    <div id="folderreport" class="bubble" style="margin-top:12px;display:none;max-height:44vh;overflow:auto"></div>
+  </div>
+  <div class="df" id="folderactions"></div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+<div id="tip"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let MODES = [], mode = localStorage.getItem('vna_mode') || 'tu_dong';
+let convo = [], attachments = [], busy = false, CFG = {}, exportText = '';
+
+function toast(t, ms=2600){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),ms)}
+async function post(url, body){
+  const r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j = await r.json().catch(()=>({error:'Phản hồi không hợp lệ'}));
+  if(!r.ok || j.error) throw new Error(j.error || ('Lỗi '+r.status));
+  return j;
+}
+const get = url => fetch(url).then(r=>r.json());
+
+/* ---------- Markdown -> HTML (gon nhe) ---------- */
+function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function inline(s){return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g,'$1<i>$2</i>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/&lt;br\/?&gt;/g,'<br>')}
+function md(src){
+  const L = src.replace(/\r/g,'').split('\n'); let h='', i=0, list=false;
+  const close=()=>{if(list){h+='</ul>';list=false}};
+  const row = l => l.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+  while(i<L.length){
+    const l=L[i], t=l.trim();
+    if(t.startsWith('```')){close();i++;let c='';while(i<L.length&&!L[i].trim().startsWith('```'))c+=L[i++]+'\n';h+='<pre><code>'+esc(c)+'</code></pre>';i++;continue}
+    if(t.startsWith('|') && i+1<L.length && /^\|?\s*:?-{2,}/.test(L[i+1].trim())){
+      close(); const head=row(t); i+=2; h+='<table><tr>'+head.map(c=>'<th>'+inline(c)+'</th>').join('')+'</tr>';
+      while(i<L.length && L[i].trim().startsWith('|')){h+='<tr>'+row(L[i]).map(c=>'<td>'+inline(c)+'</td>').join('')+'</tr>';i++}
+      h+='</table>'; continue;
+    }
+    let m;
+    if((m=t.match(/^(#{1,6})\s+(.*)/))){close();h+=`<h${Math.min(m[1].length+1,4)}>${inline(m[2])}</h${Math.min(m[1].length+1,4)}>`}
+    else if((m=t.match(/^[-*+•]\s+(.*)/))){if(!list){h+='<ul>';list=true}h+='<li>'+inline(m[1])+'</li>'}
+    else if(t==='---'){close();h+='<hr style="border:0;border-top:1px solid #dde2e8">'}
+    else if(t===''){close()}
+    else {close();h+='<p>'+inline(t)+'</p>'}
+    i++;
+  }
+  close(); return h;
+}
+
+/* ---------- Giao dien ---------- */
+function renderModes(){
+  $('#modes').innerHTML = MODES.map(m=>`<div class="mode ${m.id===mode?'on':''}" onclick="setMode('${m.id}')"><span class="ic">${m.icon}</span>${m.ten}</div>`).join('');
+  const cur = MODES.find(m=>m.id===mode) || MODES[0];
+  $('#chips').innerHTML = cur.goi_y.map((g,i)=>`<button class="chip" data-i="${i}">${esc(g)}</button>`).join('');
+  $('#tkbox').style.display = mode==='lanh_dao'?'block':'none';
+  $('#gvbox').style.display = mode==='giao_vien'?'block':'none';
+  $('#chips').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{const q=$('#q');q.value=cur.goi_y[b.dataset.i];q.focus();q.setSelectionRange(q.value.length,q.value.length)});
+}
+function setMode(id){mode=id;localStorage.setItem('vna_mode',id);renderModes()}
+function renderAtts(){
+  $('#atts').innerHTML = attachments.map((a,i)=>`<div class="att"><span title="${esc(a.name)}">📄 ${esc(a.name)} <small>(${Math.round(a.text.length/1000)}k ký tự)</small></span><b onclick="attachments.splice(${i},1);renderAtts()">✕</b></div>`).join('');
+}
+const PRI_CLS={'cao':'cao','trung bình':'tb','thấp':'thap'};
+const ST_GIAO=['chưa','đang làm','chờ kết quả'];
+function checklistHTML(items, compact, giao){
+  if(!items.length) return '<div class="note" style="padding:8px 0">Chưa có công việc nào.</div>';
+  const done=items.filter(t=>t.status==='xong').length;
+  return `<div class="progress"><i style="width:${Math.round(done*100/items.length)}%"></i></div>
+  <div class="tag" style="margin-bottom:6px">Đã hoàn thành ${done}/${items.length} việc</div>
+  <table class="check"><tr><th style="width:34px">Xong</th><th>Công việc</th>${giao?'<th>Người thực hiện</th><th>Tình trạng</th>':''}<th>Ưu tiên</th><th>Hạn</th>${compact?'':'<th></th>'}</tr>`+
+  items.map(t=>`<tr class="${t.status==='xong'?'done':''}">
+    <td><input type="checkbox" ${t.status==='xong'?'checked':''} onchange="toggleTask('${t.id}',this.checked)"></td>
+    <td>${esc(t.title)}${t.nguon?`<div class="tag">📎 ${esc(t.nguon)}</div>`:''}${t.note?`<div class="tag">${esc(t.note)}</div>`:''}${t.repeat&&t.repeat!=='không'?`<span class="tag"> ↻ ${t.repeat}</span>`:''}</td>
+    ${giao?`<td>${esc(t.nguoi||'')}</td><td>${t.status==='xong'?'<span class="tag">xong</span>':`<select onchange="setStatus('${t.id}',this.value)" style="font-size:12.5px">${ST_GIAO.map(x=>`<option ${x===t.status?'selected':''}>${x}</option>`).join('')}</select>`}</td>`:''}
+    <td><span class="pri ${PRI_CLS[t.priority]||'tb'}">${esc(t.priority||'')}</span></td>
+    <td><span class="tag ${t.overdue?'od':''}">${t.day_label||''} ${t.due?t.due.slice(11,16):''}</span></td>
+    ${compact?'':`<td><b style="cursor:pointer;color:var(--muted)" title="Xóa" onclick="delTask('${t.id}')">✕</b></td>`}</tr>`).join('')+'</table>';
+}
+async function toggleTask(id, done){
+  try{await post('/api/tasks/update',{id,status:done?'xong':'chưa'}); if(done) toast('👏 Tuyệt vời! Đã hoàn thành một việc.');
+    refreshChecklist(); if(dlgTasks.open) loadTasks();}catch(e){toast('⚠ '+e.message)}
+}
+async function setStatus(id,status){try{await post('/api/tasks/update',{id,status});toast('Đã cập nhật tình trạng')}catch(e){toast('⚠ '+e.message)}}
+async function approveTask(id,ok){await post('/api/tasks/approve',{id,ok});if(dlgTasks.open)loadTasks();if($('#greetlist'))welcome()}
+async function approveAll(ok){if(!ok&&!confirm('Bỏ tất cả nhiệm vụ đề xuất?'))return;await post('/api/tasks/approve_all',{ok});toast(ok?'Đã duyệt tất cả':'Đã bỏ tất cả');if(dlgTasks.open)loadTasks();if($('#greetlist'))welcome()}
+async function delTask(id){if(!confirm('Xóa công việc này?'))return; await post('/api/tasks/delete',{id}); loadTasks(); refreshChecklist()}
+async function refreshChecklist(){
+  const box=$('#greetlist'); if(!box) return;
+  const g=await get('/api/greeting'); box.innerHTML=checklistHTML(g.items,true); $('#greetsum').textContent=g.summary;
+  if($('#greetgiao')) $('#greetgiao').innerHTML=checklistHTML(g.giao||[],true,true);
+}
+async function welcome(){
+  setNav('homnay');
+  let g={hello:'Xin chào!',wish:'',summary:'',items:[],giao:[],inbox:[],sap_het_han:[],sang_kien:[],de_xuat:0};
+  try{ const first=!sessionStorage.getItem('vna_greeted'); sessionStorage.setItem('vna_greeted','1');
+       g=await get('/api/greeting'+(first?'?speak=1':'')); }catch(e){}
+  const inbox=(g.inbox||[]), het=(g.sap_het_han||[]), sk=(g.sang_kien||[]);
+  $('#chat').innerHTML = `<div class="greet"><div class="top"><h2>☀ ${esc(g.hello)}</h2><p>${esc(g.wish)}</p></div>
+   <div class="body">
+   ${inbox.length?`<div class="blk" style="background:#eef6ff;border-color:#cfe0f5">📥 <b>${inbox.length} văn bản mới</b> đã được tiếp nhận: ${inbox.slice(0,5).map(d=>`<span${tipAttr(d.tip)}>${d.do_khan&&d.do_khan!=='Thường'?'🔴 ':''}<u style="text-decoration-style:dotted">${esc(d.trich_yeu||d.file)}</u></span>`).join('; ')}${inbox.length>5?'…':''} — <a href="#" onclick="openInbox();return false">xem</a></div>`:''}
+   ${g.de_xuat?`<div class="blk" style="background:#fff7e0;border-color:#f0d58a">📝 <b>${g.de_xuat} nhiệm vụ đề xuất</b> đang chờ bạn duyệt (VNA trích từ văn bản). <button class="btn sec" style="padding:3px 10px" onclick="openTasks('de_xuat')">Xem và duyệt</button> <button class="btn" style="padding:3px 10px" onclick="approveAll(true)">Duyệt tất cả</button></div>`:''}
+   ${het.length?`<div class="blk"><h4>⏰ Công văn sắp hết hạn trả lời mà chưa có văn bản</h4>${het.map(h=>`<div style="font-size:14px;padding:2px 0">${h.qua_han?'🔴 <b>Quá hạn</b>':'🟠'} ${esc(h.han_tra_loi)}${h.uoc_tinh?' <span class="tag">(ước tính)</span>':''} — ${esc(h.so_ky_hieu||'Số đến '+h.stt)}: ${esc(h.trich_yeu)}</div>`).join('')}</div>`:''}
+   <div class="blk"><div class="row" style="justify-content:space-between"><h4>📌 Việc tôi phải làm trong 3 ngày tới</h4>
+   <span class="row"><button class="btn sec" onclick="openTasks()">＋ Thêm việc</button><button class="btn sec" onclick="plannerAI('ke_hoach')">✨ AI xếp lịch hôm nay</button></span></div>
+   <div class="sum" id="greetsum">${esc(g.summary)}</div><div id="greetlist">${checklistHTML(g.items,true)}</div></div>
+   <div class="blk" id="cvopen" style="display:none"><h4>📋 Công văn đang xử lý <span class="tag">(trỏ chuột vào để xem việc cần làm, thời hạn)</span></h4><div id="cvlist"></div></div>
+   <div class="blk"><h4>🧭 Việc cần chỉ đạo, đôn đốc (đã giao)</h4><div id="greetgiao">${checklistHTML(g.giao||[],true,true)}</div></div>
+   ${sk.length?`<div class="blk" style="background:#f1fbf3;border-color:#bfe3c8"><h4>💡 Sáng kiến cải tiến VNA đề xuất</h4>${sk.map(x=>`<div style="padding:4px 0;font-size:14px"><b>${esc(x.ten)}</b> — ${esc(x.loi_ich||'')} <button class="btn" style="padding:2px 9px;font-size:12.5px" onclick="decideSK('${x.id}','trien_khai')">Triển khai</button> <button class="btn sec" style="padding:2px 9px;font-size:12.5px" onclick="decideSK('${x.id}','bo_qua')">Bỏ qua</button></div>`).join('')}<div class="tag">File đề xuất chi tiết (kèm hướng dẫn từng bước) nằm trong 04_SAN_PHAM/Du_thao/…/Sang_kien.</div></div>`:''}
+   </div></div>`;
+  get('/api/inbox').then(r=>{const open=r.register.filter(d=>!d.da_tra_loi&&!(d.trang_thai||'').includes('Trùng')).slice(0,10);
+    if(!open.length||!$('#cvlist'))return; $('#cvopen').style.display='';
+    $('#cvlist').innerHTML=open.map(d=>`<div class="cv"${tipAttr(d.tip)}><span>${d.do_khan&&d.do_khan!=='Thường'?'🔴':'📄'}</span><span style="flex:1"><b>${esc(d.so_ky_hieu||'Số đến '+d.stt)}</b> — ${esc(d.trich_yeu||d.file)}</span><span class="tag">hạn ${esc(d.han_tra_loi||'')}</span></div>`).join('')}).catch(()=>{});
+}
+function addMsg(role, text, sources, modeName){
+  if($('.welcome')||$('.greet')) $('#chat').innerHTML='';
+  const d=document.createElement('div'); d.className='msg '+role;
+  if(role==='user'){d.innerHTML=`<div class="who">Bạn</div><div class="bubble"></div>`;d.querySelector('.bubble').textContent=text}
+  else{
+    d.innerHTML=`<div class="who">VNA${modeName?' · '+esc(modeName):''}</div><div class="bubble">${md(text)}</div>
+    <div class="actions">
+      <button data-a="copy">📋 Sao chép</button><button data-a="word">📝 Mở bằng Word</button>
+      <button data-a="xlsx">📊 Xuất Excel</button><button data-a="speak">🔊 Đọc to</button>
+      <button data-a="stop">⏹ Dừng đọc</button><button data-a="audio">💾 Lưu file giọng đọc</button>
+      ${text.includes('```')?'<button data-a="code">💻 Lưu mã nguồn</button>':''}
+      <button data-a="up" title="Tốt – VNA ghi nhận">👍</button><button data-a="down" title="Chưa tốt – dặn VNA lần sau">👎</button>
+    </div>` + (sources&&sources.length?`<div class="src">Nguồn tham khảo: ${[...new Map(sources.map(s=>[s.source+s.loc,s])).values()].map(s=>s.url?`🌐 <a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.source||s.url)}</a>`:esc(s.source)+(s.loc&&s.loc!=='đính kèm'?' – '+esc(s.loc):'')).join('; ')}</div>`:'');
+    d.querySelectorAll('.actions button').forEach(b=>b.onclick=()=>act(b.dataset.a,text));
+  }
+  $('#chat').appendChild(d); $('#chat').scrollTop=1e9; return d;
+}
+async function act(a, text){
+  try{
+    if(a==='copy'){await navigator.clipboard.writeText(text);toast('Đã sao chép')}
+    if(a==='up'){const note=prompt('VNA làm tốt. Muốn dặn VNA giữ điều gì cho lần sau? (để trống cũng được)','');if(note===null)return;await post('/api/feedback',{rating:'tot',note,sample:text});toast('Đã ghi nhận 👍')}
+    if(a==='down'){const note=prompt('Lần sau VNA cần làm khác thế nào? (VD: viết ngắn hơn, gọi giáo viên là “các thầy cô”)','');if(!note)return;await post('/api/feedback',{rating:'chua_tot',note,sample:text});toast('Đã ghi vào Sổ tay phong cách – lần sau VNA làm theo')}
+    if(a==='word'){openWordDialog(text)}
+    if(a==='xlsx'){const r=await post('/api/export_xlsx',{content:text,open:true});toast('Đã mở Excel: '+r.name)}
+    if(a==='speak'){await post('/api/tts',{text});toast('Đang đọc… (bấm ⏹ để dừng)')}
+    if(a==='stop'){await post('/api/tts',{action:'stop'})}
+    if(a==='code'){const r=await post('/api/save_code',{content:text});toast('Đã lưu '+r.files.length+' file mã nguồn',5000)}
+    if(a==='audio'){toast('Đang tạo file giọng đọc…',8000);const r=await post('/api/tts',{action:'save',text});toast('Đã lưu: '+r.path,5000)}
+  }catch(e){toast('⚠ '+e.message,6000)}
+}
+
+/* ---------- Tom tat khi tro chuot (data-tip) ---------- */
+(()=>{const tip=document.getElementById('tip');let cur=null;
+  document.addEventListener('mouseover',e=>{const el=e.target.closest('[data-tip]');if(el===cur)return;cur=el;
+    if(!el){tip.classList.remove('show');return}tip.textContent=el.dataset.tip;tip.classList.add('show')});
+  document.addEventListener('mousemove',e=>{if(!cur)return;const w=tip.offsetWidth,h=tip.offsetHeight;
+    let x=e.clientX+16,y=e.clientY+14;if(x+w>innerWidth-8)x=e.clientX-w-16;if(y+h>innerHeight-8)y=e.clientY-h-14;tip.style.left=x+'px';tip.style.top=y+'px'});
+})();
+const tipAttr=t=>t?` data-tip="${esc(t)}"`:'';
+
+/* ---------- Gui yeu cau ---------- */
+async function send(){
+  const q=$('#q').value.trim(); if(!q||busy) return;
+  busy=true; $('#send').disabled=true; $('#q').value='';
+  addMsg('user', q + (attachments.length?`\n📎 ${attachments.map(a=>a.name).join(', ')}`:''));
+  convo.push({role:'user',content:q});
+  const wait=document.createElement('div'); wait.className='msg';
+  wait.innerHTML='<div class="who">VNA</div><div class="bubble"><span class="thinking">Đang đọc tài liệu và suy nghĩ</span><div class="live"></div></div>';
+  $('#chat').appendChild(wait); $('#chat').scrollTop=1e9; setNav(mode==='giao_vien'?'chuyenmon':'hoi');
+  const live=wait.querySelector('.live'), th=wait.querySelector('.thinking'); let text='', modeName='';
+  const PH={tra_cuu:'Đang tra cứu nguồn chính thống',viet:'Đang viết',kiem_tra:'Đang tự kiểm tra lỗi'};
+  try{
+    const res=await fetch('/api/chat_stream',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({mode,messages:convo,attachments,use_library:$('#uselib').checked,web:$('#useweb').checked?true:'auto'})});
+    const rd=res.body.getReader(), dec=new TextDecoder(); let rest='', final=null, err=null;
+    while(true){const {value,done}=await rd.read(); if(done)break; rest+=dec.decode(value,{stream:true});
+      let i; while((i=rest.indexOf('\n'))>=0){const line=rest.slice(0,i);rest=rest.slice(i+1);if(!line.trim())continue;const ev=JSON.parse(line);
+        if(ev.mode_name){modeName=ev.mode_name;wait.querySelector('.who').textContent='VNA · '+modeName}
+        if(ev.phase){th.textContent=PH[ev.phase]||'Đang xử lý'; th.style.display=''}
+        if(ev.t){text+=ev.t; th.style.display='none'; live.innerHTML=md(text); $('#chat').scrollTop=1e9}
+        if(ev.done) final=ev; if(ev.error) err=ev.error;}}
+    if(err) throw new Error(err);
+    if(!final) throw new Error('Mất kết nối với VNA');
+    wait.remove(); convo.push({role:'assistant',content:final.reply}); addMsg('assistant',final.reply,final.sources,final.mode_name);
+    if(final.tps) checkStatus();
+  }catch(e){
+    wait.remove(); convo.pop(); addMsg('assistant','⚠ '+e.message);
+  }finally{busy=false;$('#send').disabled=false;$('#q').focus()}
+}
+function newChat(){convo=[];attachments=[];renderAtts();welcome()}
+$('#q').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();send()}});
+$('#q').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(220,e.target.scrollHeight)+'px'});
+
+/* ---------- Tai lieu ---------- */
+const b64 = f => new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(',')[1]);r.onerror=no;r.readAsDataURL(f)});
+async function addFiles(files){
+  for(const f of files){
+    try{toast('Đang đọc '+f.name+'…');const r=await post('/api/extract',{name:f.name,data:await b64(f)});
+      attachments.push({name:f.name,text:r.text});renderAtts();toast('Đã đọc '+f.name)}
+    catch(e){toast('⚠ '+f.name+': '+e.message,6000)}
+  }
+}
+$('#pick').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',e=>{e.preventDefault();if(e.dataTransfer.files.length)addFiles([...e.dataTransfer.files])});
+
+/* ---------- Xuat Word ---------- */
+async function openWordDialog(text){
+  exportText=text;
+  const d=await post('/api/parse_draft',{content:text});
+  const isDraft=!!d.loai;
+  $('#w_thethuc').checked = isDraft || mode==='soan_thao';
+  const opts=[...$('#w_loai').options].map(o=>o.text.toLowerCase());
+  $('#w_loai').selectedIndex = Math.max(0, opts.indexOf((d.loai||'văn bản khác').toLowerCase()));
+  if(!isDraft) $('#w_loai').value='Văn bản khác';
+  $('#w_trichyeu').value=d.trich_yeu||''; $('#w_kinhgui').value=d.kinh_gui||'';
+  $('#w_noinhan').value=d.noi_nhan||'- Như trên;\n- Lưu: VT.';
+  $('#w_chucvu').value=d.chuc_vu||CFG.chuc_vu_ky||''; $('#w_nguoiky').value=CFG.nguoi_ky||'';
+  $('#w_cqcq').value=CFG.co_quan_chu_quan||''; $('#w_cq').value=CFG.co_quan||''; $('#w_diadanh').value=CFG.dia_danh||'';
+  $('#w_so').value=CFG.ky_hieu_co_quan?('Số:      /'+CFG.ky_hieu_co_quan):'';
+  dlgWord.showModal();
+}
+async function doWord(open){
+  const opts={the_thuc:$('#w_thethuc').checked,loai:$('#w_loai').value,so_ky_hieu:$('#w_so').value,trich_yeu:$('#w_trichyeu').value,
+    kinh_gui:$('#w_kinhgui').value,noi_nhan:$('#w_noinhan').value,chuc_vu:$('#w_chucvu').value,nguoi_ky:$('#w_nguoiky').value,
+    co_quan_chu_quan:$('#w_cqcq').value,co_quan:$('#w_cq').value,dia_danh:$('#w_diadanh').value,co_chu:$('#w_cochu').value,
+    tieu_de:$('#w_thethuc').checked?'':$('#w_trichyeu').value};
+  try{
+    const r=await post('/api/export_docx',{content:exportText,opts,open});
+    if(!open){const a=document.createElement('a');a.href='data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,'+r.data;a.download=r.name;a.click()}
+    toast((open?'Đang mở Word: ':'Đã lưu: ')+r.name,4000); dlgWord.close();
+  }catch(e){toast('⚠ '+e.message,6000)}
+}
+
+/* ---------- Cai dat ---------- */
+const SET_KEYS=['power_mode','ollama_model_fast','phan_bien_khi_dung_pin','ai_cache','offline_only','official_web','web_auto','official_extra_domains','backend','ollama_model','ollama_url','claude_api_key','claude_model','openai_base_url','openai_model','openai_api_key','temperature',
+  'tts_engine','tts_rate','edge_voice','ten_nguoi_dung','danh_xung','greet_speak','remind_speak','ten_truong','nam_hoc','workspace_dir','inbox_auto','tu_kiem_tra','phan_bien_ai','dat_ten_chuan','backup_dir','inbox_trien_khai','co_quan_chu_quan','co_quan','ky_hieu_co_quan','dia_danh','chuc_vu_ky','nguoi_ky','library_dir'];
+async function loadCfg(){CFG=await get('/api/config')}
+async function openSettings(){
+  await loadCfg(); SET_KEYS.forEach(k=>{const e=$('#s_'+k); if(!e) return; if(e.type==='checkbox') e.checked=!!CFG[k]; else e.value=CFG[k]??''});
+  get('/api/status').then(s=>{$('#ollist').innerHTML=(s.models||[]).map(m=>`<option value="${esc(m)}">`).join('')});
+  $('#voiceinfo').textContent='';
+  if(CFG.is_windows) get('/api/voices').then(v=>{const vi=(v.voices||[]).filter(x=>/\[vi/i.test(x));
+    $('#voiceinfo').textContent = vi.length?('Giọng tiếng Việt trên máy: '+vi.join(', ')):'Chưa có giọng tiếng Việt của Windows. Vào Settings › Time & Language › Language & region › Add a language › Tiếng Việt (tích chọn Speech/Text-to-speech), hoặc chọn giọng Edge.'});
+  $('#ownerinfo').textContent=CFG.owner_name?('Tên chủ máy VNA tự nhận: '+CFG.owner_name+'. Muốn VNA gọi bằng tên khác, hãy nhập ở ô trên.'):'Không đọc được tên chủ máy; hãy nhập tên bạn muốn VNA gọi.';
+  get('/api/backup').then(b=>{$('#bk_list').innerHTML=b.items.map(x=>`<option>${esc(x.name)}</option>`).join('')||'<option value="">(chưa có bản sao lưu)</option>'});
+  dlgSet.showModal();
+}
+async function backupNow(){try{const r=await post('/api/backup/now',{});toast('Đã sao lưu: '+r.path,5000);openSettings()}catch(e){toast('⚠ '+e.message)}}
+async function restoreBk(){const n=$('#bk_list').value;if(!n)return;if(!confirm('Phục hồi dữ liệu (công việc, sổ, học tập, cấu hình) từ '+n+'? VNA tự sao lưu hiện trạng trước, rồi tắt để bạn mở lại.'))return;
+  try{const r=await post('/api/backup/restore',{name:n});document.body.innerHTML='<div class="welcome"><h1>VNA</h1><p>'+esc(r.message)+'</p></div>'}catch(e){toast('⚠ '+e.message)}}
+async function saveSettings(){
+  const body={}; SET_KEYS.forEach(k=>{const e=$('#s_'+k); if(e) body[k]=e.type==='checkbox'?e.checked:e.value});
+  try{CFG=await post('/api/config',body);dlgSet.close();toast('Đã lưu cài đặt');checkStatus()}catch(e){toast('⚠ '+e.message)}
+}
+async function checkStatus(){
+  try{const s=await get('/api/status');const el=$('#status');el.textContent=(s.ok?'● ':'⚠ ')+s.message;el.title=s.message;el.classList.toggle('bad',!s.ok)}
+  catch(e){$('#status').textContent='⚠ Không kết nối được VNA'}
+}
+$('#status').onclick=checkStatus;
+
+/* ---------- Thu vien ---------- */
+async function openLibrary(){
+  const L=await get('/api/library');
+  $('#libbody').innerHTML=`<div class="note">Thư mục: <b>${esc(L.folder)}</b>${L.busy?' — <i>đang lập chỉ mục…</i>':''}<br>
+  Chép luật, nghị định, thông tư, quy chế, tài liệu chuyên môn (Word, PDF có chữ, Excel, txt) vào thư mục này. VNA tự tìm đoạn liên quan khi trả lời và ghi nguồn.</div>`+
+  (L.files.length?L.files.map(f=>`<div class="libfile"><span>📄 ${esc(f.name)}</span><span style="color:${f.error?'var(--brand)':'var(--muted)'}">${f.error?esc(f.error):f.chunks+' đoạn'}</span></div>`).join(''):'<div class="note">Thư viện đang trống.</div>');
+  if(!dlgLib.open) dlgLib.showModal();
+}
+$('#libpick').onchange=async e=>{
+  for(const f of e.target.files){try{await post('/api/library/add',{name:f.name,data:await b64(f)})}catch(err){toast('⚠ '+err.message)}}
+  e.target.value=''; toast('Đã thêm, đang lập chỉ mục…'); setTimeout(openLibrary,2000);
+};
+
+/* ---------- Cong viec & nhat ky ---------- */
+let taskTab='toi';
+async function openTasks(tab){if(tab)taskTab=tab;setNav('congviec');await loadTasks(); if(!dlgTasks.open) dlgTasks.showModal(); $('#t_title').focus()}
+async function loadTasks(){
+  const g=await get('/api/tasks');
+  document.querySelectorAll('#ttabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===taskTab));
+  $('#tcount').innerHTML=g.de_xuat.length?`<span class="badge">${g.de_xuat.length}</span>`:'';
+  $('#jbox').style.display=taskTab==='nhatky'?'':'none';
+  const lab=t=>t.due?t.due.slice(8,10)+'/'+t.due.slice(5,7):'Chưa hẹn';
+  if(taskTab==='de_xuat'){
+    $('#tasklist').innerHTML=g.de_xuat.length?`<div class="row" style="margin-bottom:8px"><span class="tag" style="flex:1">VNA trích các việc này từ văn bản đến/đi. Duyệt thì vào danh sách và được nhắc hạn.</span><button class="btn" onclick="approveAll(true)">✔ Duyệt tất cả</button><button class="btn sec" onclick="approveAll(false)">✕ Bỏ tất cả</button></div>
+      <table class="check"><tr><th>Việc đề xuất</th><th>Loại</th><th>Người</th><th>Hạn</th><th></th></tr>${g.de_xuat.map(t=>`<tr><td>${esc(t.title)}<div class="tag">📎 ${esc(t.nguon||'')}${t.han_uoc_tinh?' · hạn VNA ước tính':''}</div></td><td>${t.loai==='giao'?'Đôn đốc':'Tôi làm'}</td><td>${esc(t.nguoi||'')}</td><td class="tag">${lab(t)}</td>
+      <td style="white-space:nowrap"><button class="btn" style="padding:3px 9px" onclick="approveTask('${t.id}',true)">✔ Duyệt</button> <button class="btn sec" style="padding:3px 9px" onclick="approveTask('${t.id}',false)">✕</button></td></tr>`).join('')}</table>`
+      :'<div class="note">Không có nhiệm vụ đề xuất nào đang chờ.</div>';
+  } else if(taskTab==='nhatky'){
+    $('#tasklist').innerHTML='';
+    const j=await get('/api/journal'); const today=Object.values(j)[0]||[];
+    $('#journal').innerHTML=today.map(e=>`<div>🕘 <b>${e.time}</b> — ${esc(e.text)}</div>`).join('')||'<span class="tag">Chưa có ghi chép hôm nay.</span>';
+  } else {
+    const giao=taskTab==='giao', f=a=>a.filter(t=>(t.loai||'toi')===(giao?'giao':'toi'));
+    const sec=(label,arr,od)=>arr.length?`<h4 style="margin:12px 0 4px">${label} (${arr.length})</h4>`+checklistHTML(arr.map(t=>({...t,overdue:od,day_label:lab(t)})),false,giao):'';
+    $('#tasklist').innerHTML = sec('⚠ Quá hạn',f(g.qua_han),true)+sec('Hôm nay',f(g.hom_nay))+sec('Sắp tới',f(g.sap_toi))+sec('Chưa hẹn ngày',f(g.chua_hen))+sec('✔ Đã xong (7 ngày qua)',f(g.da_xong))
+      || `<div class="note">${giao?'Chưa có việc đã giao. VNA tự đề xuất khi bạn đặt văn bản đã ký (kế hoạch, thông báo phân công) vào 04_SAN_PHAM/Da_ban_hanh.':'Chưa có công việc. Nhập tên việc, chọn hạn rồi bấm “Thêm”.'}</div>`;
+  }
+}
+async function addTask(){
+  const rem=+$('#t_rem').value;
+  try{await post('/api/tasks/add',{title:$('#t_title').value,note:$('#t_note').value,due:$('#t_due').value,priority:$('#t_pri').value,
+      remind:rem>=0,remind_before:Math.max(0,rem),repeat:$('#t_rep').value,loai:$('#t_loai').value,nguoi:$('#t_nguoi').value});
+    taskTab=$('#t_loai').value; $('#t_title').value='';$('#t_note').value='';$('#t_nguoi').value='';toast('Đã thêm công việc');loadTasks();refreshChecklist()}catch(e){toast('⚠ '+e.message)}
+}
+async function addJournal(){try{await post('/api/journal/add',{text:$('#j_text').value});$('#j_text').value='';loadTasks()}catch(e){toast('⚠ '+e.message)}}
+async function plannerAI(kind){
+  if(dlgTasks.open) dlgTasks.close();
+  const label={ke_hoach:'Lập kế hoạch làm việc hôm nay',tong_ket:'Tổng kết ngày',tuan:'Lập kế hoạch tuần'}[kind];
+  addMsg('user',label);
+  const wait=document.createElement('div');wait.className='msg';wait.innerHTML='<div class="who">VNA</div><div class="bubble"><span class="thinking">Đang xử lý</span></div>';
+  $('#chat').appendChild(wait);
+  try{const r=await post('/api/planner/ai',{kind});wait.remove();convo.push({role:'user',content:label},{role:'assistant',content:r.reply});addMsg('assistant',r.reply)}
+  catch(e){wait.remove();addMsg('assistant','⚠ '+e.message)}
+}
+/* nhac viec: hoi may chu moi 30 giay */
+async function pollReminders(){
+  if(document.hidden) return;  // tab an: khong hoi may chu (tiet kiem pin)
+  try{const r=await get('/api/reminders');
+    for(const t of r.items){toast('⏰ Nhắc việc: '+t.title,12000);
+      if(window.Notification&&Notification.permission==='granted') new Notification('VNA nhắc việc',{body:t.title});}
+    if(r.items.length) refreshChecklist();
+  }catch(e){}
+}
+setInterval(pollReminders,45000);
+/* tien do tu cai dat (bo nao AI, mo hinh...) */
+let setupWasBusy=false;
+async function pollSetup(){
+  if(document.hidden){setTimeout(pollSetup,15000);return}
+  try{const s=await get('/api/setup_status'); const bar=$('#setupbar');
+    if(s.done){ if(setupWasBusy){bar.style.display='none';toast('✅ VNA đã cài đặt xong, sẵn sàng làm việc!',6000);checkStatus()} bar.style.display='none'; setupWasBusy=false; setTimeout(pollSetup,60000); return; }
+    if(s.stage==='start'){setTimeout(pollSetup,2000);return}
+    setupWasBusy=true; bar.style.display='block';
+    $('#setupmsg').textContent=s.message+(s.error?' ('+s.error+')':'');
+    $('#setuppct').style.width=(s.percent??5)+'%';
+  }catch(e){}
+  setTimeout(pollSetup,2500);
+}
+pollSetup();
+if(window.Notification&&Notification.permission==='default') Notification.requestPermission();
+
+/* ---------- Cong cu giao vien ---------- */
+async function readFile(f){const r=await post('/api/extract',{name:f.name,data:await b64(f)});return {name:f.name,text:r.text}}
+async function chamBai(){
+  const da=$('#c_da').files[0], bai=[...$('#c_bai').files];
+  if(!da||!bai.length) return toast('Cần chọn file đáp án và bài làm của học sinh.',5000);
+  dlgCham.close(); const mon=$('#c_mon').value;
+  addMsg('user',`✅ Chấm ${bai.length} bài – ${mon}`);
+  const wait=document.createElement('div');wait.className='msg';wait.innerHTML=`<div class="who">VNA</div><div class="bubble"><span class="thinking">Đang đọc và chấm ${bai.length} bài (mỗi bài khoảng 1 phút với AI trên máy)</span></div>`;
+  $('#chat').appendChild(wait);
+  try{
+    const dap_an=await readFile(da), de=$('#c_de').files[0]?await readFile($('#c_de').files[0]):null, bl=[];
+    for(const f of bai){try{bl.push(await readFile(f))}catch(e){bl.push({name:f.name,text:''})}}
+    const r=await post('/api/cham_bai',{dap_an,de,bai_lam:bl,mon,thang:+$('#c_thang').value||10,yeu_cau:$('#c_yc').value,open:true});
+    wait.remove(); addMsg('assistant',`**${r.summary}.**\n\nBảng điểm (đã mở bằng Excel): ${r.excel}\n\nChi tiết từng câu: ${r.word}\n\n${r.markdown}`);
+  }catch(e){wait.remove();addMsg('assistant','⚠ '+e.message)}
+}
+async function nhanXet(){
+  const f=$('#n_file').files[0]; if(!f) return toast('Hãy chọn file Excel bảng điểm.');
+  dlgNX.close(); addMsg('user','💬 Viết nhận xét học sinh: '+f.name);
+  const wait=document.createElement('div');wait.className='msg';wait.innerHTML='<div class="who">VNA</div><div class="bubble"><span class="thinking">Đang viết nhận xét cho từng học sinh</span></div>';
+  $('#chat').appendChild(wait);
+  try{const r=await post('/api/nhan_xet',{data:await b64(f),mon:$('#n_mon').value,loai:$('#n_loai').value,them:$('#n_them').value,open:true});
+    wait.remove(); addMsg('assistant',`Đã viết nhận xét cho **${r.count} học sinh** và mở bằng Excel.\n\nFile: ${r.path}\n\nThầy/cô hãy đọc lại, chỉnh sửa cho sát từng em trước khi sử dụng.`)}
+  catch(e){wait.remove();addMsg('assistant','⚠ '+e.message)}
+}
+
+/* ---------- Dinh duong ---------- */
+const PKEYS=['so_nguoi','thanh_vien','vung_mien','ngan_sach','suc_khoe','so_thich'];
+async function openFood(){ if(!$('#f_day').value) $('#f_day').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+  await loadFood(true); if(!dlgFood.open) dlgFood.showModal(); }
+async function loadFood(withProfile){
+  const r=await get('/api/nutrition?day='+$('#f_day').value);
+  if(withProfile) PKEYS.forEach(k=>{const e=$('#p_'+k); if(e) e.value=r.profile[k]??''});
+  const sel=new Set(r.items);
+  $('#foodgrid').innerHTML=r.groups.map(g=>`<div style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;${g.han_che?'background:#fffaf3':''}">
+    <b style="font-size:13px">${esc(g.ten)}</b>${g.items.map(it=>`<label class="chk" style="font-size:13.5px;margin-top:4px"><input type="checkbox" class="fooditem" value="${esc(it)}" ${sel.has(it)?'checked':''} onchange="saveFood()"> ${esc(it)}</label>`).join('')}</div>`).join('');
+  $('#foodan').innerHTML=md(r.analysis);
+}
+let foodT; function saveFood(){clearTimeout(foodT);foodT=setTimeout(async()=>{
+  const items=[...document.querySelectorAll('.fooditem:checked')].map(x=>x.value);
+  await post('/api/nutrition/day',{day:$('#f_day').value,items}); const r=await get('/api/nutrition?day='+$('#f_day').value); $('#foodan').innerHTML=md(r.analysis);},400)}
+async function foodAI(kind){
+  const prof={}; PKEYS.forEach(k=>prof[k]=$('#p_'+k).value); await post('/api/nutrition/profile',prof);
+  dlgFood.close(); setMode('dinh_duong');
+  const label={tuan:'Đề xuất thực đơn 1 tuần cho gia đình',thang:'Đề xuất thực đơn 1 tháng cho gia đình',khuyen_nghi:'Phân tích bữa ăn 7 ngày qua và khuyến nghị thực phẩm cần bổ sung'}[kind];
+  addMsg('user','🍲 '+label);
+  const wait=document.createElement('div');wait.className='msg';wait.innerHTML='<div class="who">VNA</div><div class="bubble"><span class="thinking">Chuyên gia dinh dưỡng đang chuẩn bị</span></div>';
+  $('#chat').appendChild(wait);
+  try{const r=await post('/api/nutrition/ai',{kind});wait.remove();convo.push({role:'user',content:label},{role:'assistant',content:r.reply});addMsg('assistant',r.reply)}
+  catch(e){wait.remove();addMsg('assistant','⚠ '+e.message)}
+}
+
+/* ---------- Van ban den ---------- */
+let vbTab='den';
+async function openInbox(){
+  setNav('vanban');
+  document.querySelectorAll('#vbtabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===vbTab));
+  const op=(path,label)=>path?`<a href="#" onclick='post("/api/inbox/open",{which:"file",path:${JSON.stringify(path)}});return false'>${label||'mở'}</a>`:'';
+  if(vbTab==='den'){
+    const r=await get('/api/inbox'); $('#ib_status').textContent='Trạng thái: '+r.status;
+    $('#ib_list').innerHTML=r.register.length?`<table class="check"><tr><th>Số đến</th><th>Số, ký hiệu</th><th>Trích yếu / tóm tắt</th><th>Độ khẩn</th><th>Hạn trả lời</th><th>Kết quả</th></tr>`+
+      r.register.map(d=>`<tr${tipAttr(d.tip)}><td>${d.stt}<div class="tag">${esc((d.ngay_den||'').slice(0,10))}</div></td><td>${esc(d.so_ky_hieu||'')}<div class="tag">${esc(d.co_quan_ban_hanh||'')}</div></td>
+      <td><b>${esc(d.trich_yeu||d.file)}</b><div class="tag">${esc((d.tom_tat||'').slice(0,240))}</div></td>
+      <td>${d.do_khan&&d.do_khan!=='Thường'?`<span class="pri cao">${esc(d.do_khan)}</span>`:'<span class="tag">Thường</span>'}</td>
+      <td>${esc(d.han_tra_loi||'')}${d.han_uoc_tinh?'<div class="tag">ước tính</div>':''}${d.da_tra_loi?`<div class="tag" style="color:var(--ok)">✔ ${esc(d.da_tra_loi)}</div>`:''}</td>
+      <td class="tag">${esc(d.trang_thai||'')}<br>${op(d.luu_tai,'văn bản')} ${d.phieu?'· '+op(d.phieu,'phiếu xử lý'):''} ${d.trien_khai?'· '+op(d.trien_khai,'bộ triển khai'):(d.de_xuat_trien_khai?`<br><button class="btn" style="padding:2px 8px;font-size:12px" onclick="tkStt(${d.stt})">🏫 Tạo bộ triển khai</button>`:'')}${d.ghi_chu?'<br>'+esc(d.ghi_chu):''}</td></tr>`).join('')+'</table>'
+      :'<div class="note">Chưa có văn bản đến. Chép văn bản vào thư mục 01_VAN_BAN_DEN — VNA kiểm tra mỗi 20 giây.</div>';
+    post('/api/inbox/seen',{}).catch(()=>{});
+  } else {
+    const r=await get('/api/outbox'); $('#ib_status').textContent='';
+    $('#ib_list').innerHTML=r.register.length?`<table class="check"><tr><th>Số TT</th><th>Số, ký hiệu</th><th>Trích yếu</th><th>Trả lời VB đến</th><th>Việc đã giao</th><th>Học tập</th></tr>`+
+      r.register.map(d=>`<tr><td>${d.stt}<div class="tag">${esc((d.ngay_ghi||'').slice(0,10))}</div></td><td>${esc(d.so_ky_hieu||'')}<div class="tag">${esc(d.loai||'')}</div></td>
+      <td><b>${esc(d.trich_yeu||d.file)}</b><div class="tag">${op(d.path,'mở')}</div></td><td>${(d.tra_loi||[]).map(x=>'số đến '+x).join(', ')}</td>
+      <td>${d.nhiem_vu_giao||''}</td><td class="tag">${esc(d.hoc_tap||'')}</td></tr>`).join('')+'</table>'
+      :`<div class="note">Chưa có văn bản đi. Đặt bản chính thức đã ký (Word/PDF) vào <b>04_SAN_PHAM/Da_ban_hanh</b>.</div>`;
+  }
+  if(!dlgInbox.open) dlgInbox.showModal();
+}
+async function tkStt(stt){
+  dlgInbox.close(); addMsg('user','🏫 Tạo bộ tài liệu triển khai cho văn bản đến số '+stt);
+  const wait=document.createElement('div');wait.className='msg';wait.innerHTML='<div class="who">VNA</div><div class="bubble"><span class="thinking">Đang nghiên cứu văn bản và soạn 4 tài liệu (có thể mất vài phút)</span></div>';
+  $('#chat').appendChild(wait);
+  try{const r=await post('/api/inbox/trien_khai',{stt,open:true});wait.remove();addMsg('assistant',`**Đã tạo bộ tài liệu triển khai** tại: ${r.folder}\n\n`+r.files.map(f=>'- '+f.name).join('\n')+'\n\n---\n\n'+r.markdown)}
+  catch(e){wait.remove();addMsg('assistant','⚠ '+e.message)}
+}
+
+/* ---------- Hoc tap ---------- */
+let lTab='rule';
+const TT={cho:'⏳ chờ',ap_dung:'✅ áp dụng',tat:'⏸ tắt'};
+async function openLearning(){
+  document.querySelectorAll('#ltabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===lTab));
+  const L=await get('/api/learning'); let h='', foot='';
+  if(lTab==='rule'||lTab==='error'){
+    const arr=lTab==='rule'?L.rules:L.errors, kind=lTab;
+    h=(arr.length?`<table class="check"><tr><th>${kind==='rule'?'Quy tắc':'Lỗi cần tránh'}</th>${kind==='error'?'<th>Tự thay</th>':''}<th>Nguồn</th><th>Lần gặp</th><th>Trạng thái</th><th></th></tr>`+
+      arr.slice().reverse().map(x=>`<tr><td contenteditable onblur="setLearn('${kind}','${x.id}',{noi_dung:this.innerText})">${esc(x.noi_dung)}</td>${kind==='error'?`<td class="tag">${x.cum_tu_sai?esc(x.cum_tu_sai)+' → '+esc(x.cum_tu_dung||'?'):''}</td>`:''}
+      <td class="tag">${esc(x.nguon||'')}${x.loai_vb?' · '+esc(x.loai_vb):''}</td><td>${x.dem||1}</td>
+      <td><select onchange="setLearn('${kind}','${x.id}',{trang_thai:this.value})">${Object.entries(TT).map(([k,v])=>`<option value="${k}" ${k===x.trang_thai?'selected':''}>${v}</option>`).join('')}</select></td>
+      <td><b style="cursor:pointer;color:var(--brand)" onclick="if(confirm('Xóa dòng này?'))setLearn('${kind}','${x.id}',{xoa:true}).then(openLearning)">✕</b></td></tr>`).join('')+'</table>'
+      :'<div class="note">Chưa có. VNA sẽ tự học khi bạn đặt bản đã sửa vào 04_SAN_PHAM/Da_ban_hanh.</div>');
+    foot=`<input id="l_new" placeholder="${kind==='rule'?'Thêm quy tắc, VD: Báo cáo luôn có mục Kiến nghị':'Thêm lỗi cần tránh'}" style="flex:1;padding:7px 9px;border:1px solid var(--line);border-radius:7px">
+      ${kind==='error'?'<input id="l_sai" placeholder="cụm từ sai" style="width:130px;padding:7px;border:1px solid var(--line);border-radius:7px"><input id="l_dung" placeholder="thay bằng" style="width:130px;padding:7px;border:1px solid var(--line);border-radius:7px">':''}
+      <button class="btn" onclick="addLearn('${kind}')">＋ Thêm</button>`;
+  } else if(lTab==='stat'){
+    h='<h4>Tỷ lệ nội dung bạn phải sửa trên dự thảo của VNA (càng thấp càng tốt)</h4>'+(L.stats.length?`<table class="check"><tr><th>Tháng</th><th>Số văn bản đã học</th><th>Tỷ lệ phải sửa trung bình</th></tr>${L.stats.map(s=>`<tr><td>${s.thang}</td><td>${s.so_van_ban}</td><td><b>${s.ty_le_sua_tb}%</b></td></tr>`).join('')}</table>`:'<div class="note">Chưa có số liệu.</div>')+
+      '<h4 style="margin-top:14px">Định dạng đã học theo loại văn bản</h4>'+(Object.keys(L.formats).length?`<table class="check"><tr><th>Loại</th><th>Phông</th><th>Cỡ</th><th>Lề T/D/T/P (cm)</th><th>Giãn dòng</th><th>Thụt đầu dòng</th><th>Học từ</th></tr>${Object.entries(L.formats).map(([k,f])=>`<tr><td>${k==='_chung'?'(chung)':esc(k)}</td><td>${esc(f.font||'')}</td><td>${f.size||''}</td><td>${[f.top,f.bottom,f.left,f.right].join(' / ')}</td><td>${f.line_spacing||''}</td><td>${f.first_indent||''}</td><td class="tag">${esc(f.hoc_tu||'')}</td></tr>`).join('')}</table>`:'<div class="note">Chưa học định dạng nào.</div>')+
+      '<h4 style="margin-top:14px">Văn bản mẫu theo loại</h4>'+(Object.keys(L.examples).length?Object.entries(L.examples).map(([k,v])=>`<div><b>${esc(k)}</b>: <span class="tag">${v.map(esc).join(', ')}</span></div>`).join(''):'<div class="note">Chưa có.</div>');
+  } else {
+    const r=await get('/api/sangkien');
+    h=r.items.length?r.items.map(x=>`<div class="blk"><b>💡 ${esc(x.ten)}</b> <span class="tag">${esc(x.ngay)} · ${({moi:'mới',trien_khai:'đang triển khai',bo_qua:'đã bỏ qua'})[x.trang_thai]||''}</span>
+      <div style="font-size:14px;margin-top:4px"><b>Thực trạng:</b> ${esc(x.thuc_trang||'')}<br><b>Giải pháp:</b> ${esc(x.giai_phap||'')}<br><b>Lợi ích:</b> ${esc(x.loi_ich||'')}</div>
+      <div style="margin-top:6px">${x.file?`<a href="#" onclick='post("/api/inbox/open",{which:"file",path:${JSON.stringify(x.file)}});return false'>Mở đề xuất chi tiết (Word)</a>`:''} ${x.trang_thai==='moi'?`<button class="btn" style="padding:2px 9px" onclick="decideSK('${x.id}','trien_khai')">Triển khai</button> <button class="btn sec" style="padding:2px 9px" onclick="decideSK('${x.id}','bo_qua')">Bỏ qua</button>`:''}</div></div>`).join('')
+      :'<div class="note">Chưa có sáng kiến. VNA tự đề xuất mỗi tháng khi đủ số liệu, hoặc bấm nút dưới đây.</div>';
+    foot='<button class="btn" onclick="genSK()">💡 Phân tích công việc và đề xuất sáng kiến ngay</button>';
+  }
+  $('#lbody').innerHTML=h; $('#lfoot').innerHTML=foot;
+  if(!dlgLearn.open) dlgLearn.showModal();
+}
+async function setLearn(kind,id,changes){await post('/api/learning/item',{kind,id,changes});toast('Đã lưu')}
+async function addLearn(kind){const v=$('#l_new').value.trim();if(!v)return;await post('/api/learning/add',{kind,noi_dung:v,cum_tu_sai:$('#l_sai')?.value||'',cum_tu_dung:$('#l_dung')?.value||''});openLearning()}
+async function genSK(){toast('VNA đang phân tích số liệu làm việc… (1–3 phút)',8000);try{const r=await post('/api/sangkien/generate',{});toast(`Đã đề xuất ${r.items.length} sáng kiến`);lTab='sk';openLearning()}catch(e){toast('⚠ '+e.message,6000)}}
+async function decideSK(id,action){try{await post('/api/sangkien/decide',{id,action});toast(action==='trien_khai'?'Đã chuyển các bước thành nhiệm vụ có nhắc hạn':'Đã bỏ qua – VNA sẽ không đề xuất lại');if(dlgLearn.open)openLearning();if($('#greetlist'))welcome()}catch(e){toast('⚠ '+e.message)}}
+
+/* ---------- Dieu huong 6 khu vuc ---------- */
+function setNav(a){document.querySelectorAll('.navi').forEach(x=>x.classList.toggle('on',x.dataset.a===a))}
+function goTo(a){
+  setNav(a);
+  if(a==='homnay') welcome();
+  if(a==='vanban') openInbox();
+  if(a==='congviec') openTasks();
+  if(a==='hoi'){ if(mode==='giao_vien'||mode==='dinh_duong') setMode('tu_dong'); $('#q').focus(); }
+  if(a==='chuyenmon'){ setMode('giao_vien'); toast('Chuyên môn: giáo án, đề kiểm tra, chấm bài, nhận xét học sinh – công cụ ở cột trái'); $('#q').focus(); }
+  if(a==='canhan') openFood();
+}
+
+/* ---------- Quan ly thu muc ---------- */
+let curRoot='';
+async function openFolders(){await loadFolders(); if(!dlgFolders.open) dlgFolders.showModal()}
+async function loadFolders(){
+  const r=await get('/api/folders');
+  $('#folderlist').innerHTML=r.folders.length?r.folders.map(f=>`<div class="libfile"><label class="chk"><input type="radio" name="fr" value="${esc(f)}" ${f===curRoot?'checked':''} onchange="curRoot=this.value;folderActions()"> 📂 ${esc(f)}</label>
+    <span><a href="#" onclick="post('/api/folders/open',{root:${JSON.stringify(f).replace(/"/g,'&quot;')}});return false">Mở</a> · <a href="#" onclick="rmFolder(${JSON.stringify(f).replace(/"/g,'&quot;')});return false" style="color:var(--brand)">Bỏ quản lý</a></span></div>`).join('')
+    :'<div class="note">Chưa có thư mục nào. Hãy thêm thư mục bạn muốn VNA quản lý.</div>';
+  if(!r.folders.includes(curRoot)) curRoot=r.folders[0]||'';
+  const radio=[...document.querySelectorAll('input[name=fr]')].find(x=>x.value===curRoot); if(radio) radio.checked=true;
+  folderActions();
+}
+function folderActions(stage){
+  const a=$('#folderactions'); if(!curRoot){a.innerHTML='';return}
+  a.innerHTML=`<button class="btn sec" onclick="undoFolder()">↶ Hoàn tác lần sắp xếp gần nhất</button>
+   ${stage==='planned'?'<button class="btn sec" onclick="reportToWord()">📝 Xuất báo cáo Word</button><button class="btn red" onclick="applyFolder()">✔ Thực hiện sắp xếp</button>':''}
+   <button class="btn" onclick="scanFolder()">🔎 Rà soát</button>`;
+}
+async function addFolder(pick){
+  try{const r=await post('/api/folders/add',pick?{pick:true}:{path:$('#f_path').value}); if(!r.cancelled){$('#f_path').value='';curRoot=r.folders[r.folders.length-1];toast('Đã thêm thư mục')} loadFolders()}
+  catch(e){toast('⚠ '+e.message,6000)}
+}
+async function rmFolder(f){if(!confirm('Bỏ quản lý thư mục này? (Tài liệu bên trong không bị ảnh hưởng)'))return;await post('/api/folders/remove',{path:f});loadFolders()}
+let lastReport='';
+async function scanFolder(){
+  const box=$('#folderreport'); box.style.display='block'; box.innerHTML='<span class="thinking">Đang rà soát (đọc nội dung, so sánh trùng lặp)</span>';
+  try{const r=await post('/api/folders/scan',{root:curRoot,options:{by_category:$('#o_cat').checked,by_year:$('#o_year').checked,handle_dups:$('#o_dup').checked,near_dup:true}});
+    lastReport=r.markdown; box.innerHTML=`<p><b>${r.total}</b> tài liệu · <b>${r.dups}</b> nhóm trùng · <b>${r.moves}</b> tài liệu đề xuất di chuyển · ${r.errors} không đọc được nội dung</p>`+md(r.markdown);
+    folderActions(r.moves?'planned':'');}
+  catch(e){box.innerHTML='⚠ '+esc(e.message)}
+}
+async function applyFolder(){
+  if(!confirm('Thực hiện sắp xếp theo kế hoạch vừa xem? Không tài liệu nào bị xóa; có thể hoàn tác.'))return;
+  try{const r=await post('/api/folders/apply',{root:curRoot});toast(`Đã sắp xếp ${r.moved} tài liệu`+(r.failed.length?`, ${r.failed.length} lỗi`:''),5000);
+    $('#folderreport').innerHTML=`<p>✔ Đã di chuyển <b>${r.moved}</b> tài liệu. Nhật ký: ${esc(r.log)}</p>`+(r.failed.length?md('| Tài liệu | Lỗi |\n|---|---|\n'+r.failed.map(f=>`| ${f.from} | ${f.error} |`).join('\n')):'');folderActions()}
+  catch(e){toast('⚠ '+e.message,6000)}
+}
+async function undoFolder(){
+  if(!confirm('Hoàn tác lần sắp xếp gần nhất của thư mục này?'))return;
+  try{const r=await post('/api/folders/undo',{root:curRoot});toast(`Đã đưa ${r.restored} tài liệu về vị trí cũ`,5000);$('#folderreport').style.display='none';folderActions()}
+  catch(e){toast('⚠ '+e.message,6000)}
+}
+async function reportToWord(){try{const r=await post('/api/export_docx',{content:lastReport,opts:{the_thuc:false,tieu_de:''},open:true});toast('Đang mở Word: '+r.name)}catch(e){toast('⚠ '+e.message)}}
+
+/* ---------- Bo tai lieu trien khai trong nha truong ---------- */
+async function trienKhai(){
+  if(!attachments.length) return toast('Hãy thêm văn bản cần triển khai vào mục “Tài liệu đính kèm” trước.',5000);
+  const extra=prompt('Yêu cầu bổ sung (không bắt buộc), VD: tập trung khối THPT, hoàn thành trước 30/12:','')??null; if(extra===null) return;
+  addMsg('user','🏫 Tạo bộ tài liệu triển khai: '+attachments.map(a=>a.name).join(', '));
+  const wait=document.createElement('div');wait.className='msg';wait.innerHTML='<div class="who">VNA</div><div class="bubble"><span class="thinking">Đang nghiên cứu văn bản và soạn 4 tài liệu (có thể mất vài phút)</span></div>';
+  $('#chat').appendChild(wait);
+  try{const r=await post('/api/trien_khai',{attachments,extra,open:true});wait.remove();
+    addMsg('assistant',`**Đã tạo bộ tài liệu triển khai** tại: ${r.folder}\n\n`+r.files.map(f=>'- '+f.name).join('\n')+'\n\n---\n\n'+r.markdown);}
+  catch(e){wait.remove();addMsg('assistant','⚠ '+e.message)}
+}
+
+/* ---------- Nhap bang giong noi (Web Speech API) ---------- */
+function dictate(){
+  if(CFG.offline_only) return toast('Nhập bằng giọng nói dùng dịch vụ Internet của trình duyệt nên đã tắt trong chế độ ngoại tuyến.',6000);
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR) return toast('Trình duyệt này chưa hỗ trợ nhập bằng giọng nói. Hãy dùng Microsoft Edge hoặc Chrome.',5000);
+  const r=new SR(); r.lang='vi-VN'; r.interimResults=false; $('#mic').textContent='🔴';
+  r.onresult=e=>{$('#q').value+=($('#q').value?' ':'')+e.results[0][0].transcript};
+  r.onend=()=>{$('#mic').textContent='🎤'}; r.onerror=e=>toast('Lỗi nhận giọng: '+e.error); r.start();
+}
+async function quitApp(){if(confirm('Tắt phần mềm VNA? (Macro Word/Excel sẽ không dùng được cho đến khi mở lại)')){try{await post('/api/shutdown',{})}catch(e){} document.body.innerHTML='<div class="welcome"><h1>VNA</h1><p>Đã tắt. Có thể đóng tab này.</p></div>'}}
+
+/* ---------- Khoi dong ---------- */
+(async()=>{MODES=await get('/api/modes'); if(!MODES.find(m=>m.id===mode)) mode='tu_dong'; renderModes(); welcome(); await loadCfg(); checkStatus()})();
+</script>
+</body>
+</html>
